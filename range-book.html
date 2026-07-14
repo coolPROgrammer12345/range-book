@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Range Book — Golf Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --turf-dark:#182620;
+    --turf:#2D5A3D;
+    --fairway:#4A7C59;
+    --fairway-light:#7BA88A;
+    --sand:#DCCEA8;
+    --paper:#FAF6EC;
+    --paper-line:#E4DAC2;
+    --flag:#B23A2E;
+    --flag-dark:#8E2E24;
+    --ink:#1F2A1F;
+    --ink-soft:#5B6B5C;
+    --white:#FFFDF8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(to bottom, transparent, transparent 39px, var(--paper-line) 40px);
+    color:var(--ink);
+    font-family:'Source Sans 3', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Oswald', sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+  #app{max-width:640px;margin:0 auto;padding:0 0 60px;min-height:100vh;position:relative;}
+
+  /* Header */
+  .topbar{
+    background:var(--turf-dark);
+    color:var(--white);
+    padding:22px 20px 20px;
+    position:relative;
+    border-bottom:4px solid var(--flag);
+  }
+  .topbar::after{
+    content:'';
+    position:absolute;
+    right:20px;top:22px;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:repeating-conic-gradient(var(--white) 0% 8.3%, transparent 0% 16.6%);
+    opacity:0.5;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand h1{font-size:26px;margin:0;font-weight:700;letter-spacing:0.04em;}
+  .brand .sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--fairway-light);text-transform:none;letter-spacing:0.03em;}
+  .tab-row{display:flex;gap:8px;margin-top:16px;}
+  .tab-btn{
+    background:transparent;
+    border:1.5px solid rgba(255,253,248,0.25);
+    color:var(--white);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:7px 13px;
+    border-radius:20px;
+    cursor:pointer;
+    letter-spacing:0.02em;
+  }
+  .tab-btn.active{background:var(--flag);border-color:var(--flag);}
+
+  main{padding:22px 20px;}
+
+  /* Home category cards */
+  .cat-grid{display:flex;flex-direction:column;gap:14px;}
+  .cat-card{
+    background:var(--white);
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    padding:18px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    cursor:pointer;
+    text-align:left;
+    box-shadow:0 1px 0 var(--paper-line);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .cat-card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(45,90,61,0.12);}
+  .ring-icon{flex:0 0 auto;}
+  .cat-info h2{font-size:19px;margin:0 0 3px;color:var(--turf-dark);}
+  .cat-info p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.4;}
+  .cat-info .count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--fairway);margin-top:6px;display:block;}
+
+  /* Stat strip */
+  .stat-strip{
+    display:flex;
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:20px;
+    background:var(--white);
+  }
+  .stat{flex:1;padding:12px 8px;text-align:center;border-right:1px dashed var(--paper-line);}
+  .stat:last-child{border-right:none;}
+  .stat .num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--turf);display:block;}
+  .stat .lbl{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;}
+
+  /* Category view */
+  .back-btn{
+    background:none;border:none;color:var(--turf);
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    cursor:pointer;padding:0 0 14px;display:flex;align-items:center;gap:5px;
+  }
+  .cat-header{margin-bottom:16px;}
+  .cat-header h2{font-size:24px;color:var(--turf-dark);margin:0 0 4px;}
+  .cat-header p{margin:0;color:var(--ink-soft);font-size:13.5px;}
+
+  .drill-card{
+    background:var(--white);
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    margin-bottom:12px;
+    overflow:hidden;
+  }
+  .drill-head{
+    padding:15px 16px;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .drill-head h3{font-size:16px;margin:0 0 5px;color:var(--turf-dark);font-weight:600;}
+  .drill-head p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.45;}
+  .chevron{font-family:'JetBrains Mono',monospace;color:var(--fairway);font-size:14px;flex:0 0 auto;transition:transform .15s;}
+  .drill-card.open .chevron{transform:rotate(90deg);}
+
+  .drill-body{display:none;padding:0 16px 16px;}
+  .drill-card.open .drill-body{display:block;}
+
+  .goal-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+  .goal-table td{padding:7px 8px;font-size:12.5px;border-top:1px dashed var(--paper-line);}
+  .goal-table tr:first-child td{border-top:none;}
+  .tier-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    text-transform:uppercase;
+    padding:2px 7px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .tier-tag.Beginner{background:#E4EFE6;color:var(--turf);}
+  .tier-tag.Intermediate{background:#F3E8C8;color:#8A6A1E;}
+  .tier-tag.Advanced{background:#F3DAD5;color:var(--flag-dark);}
+
+  .log-btn{
+    background:var(--turf);
+    color:var(--white);
+    border:none;
+    padding:9px 16px;
+    border-radius:7px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    cursor:pointer;
+    letter-spacing:0.02em;
+  }
+  .log-btn:hover{background:var(--turf-dark);}
+
+  .log-form{margin-top:12px;border-top:1px solid var(--paper-line);padding-top:14px;}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.03em;font-family:'JetBrains Mono',monospace;}
+  .tier-pills{display:flex;gap:6px;}
+  .tier-pill{
+    flex:1;border:1.5px solid var(--paper-line);background:var(--white);
+    padding:7px 6px;border-radius:7px;font-size:12px;cursor:pointer;text-align:center;
+  }
+  .tier-pill.sel{border-color:var(--turf);background:#E4EFE6;color:var(--turf-dark);font-weight:600;}
+  .num-row{display:flex;gap:10px;}
+  .num-row .field{flex:1;}
+  input[type=number],textarea{
+    width:100%;border:1.5px solid var(--paper-line);border-radius:7px;
+    padding:8px 10px;font-family:'Source Sans 3',sans-serif;font-size:14px;
+    background:var(--white);color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:50px;}
+  .form-actions{display:flex;gap:8px;margin-top:12px;}
+  .save-btn{background:var(--flag);color:var(--white);border:none;padding:9px 18px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;}
+  .save-btn:hover{background:var(--flag-dark);}
+  .cancel-btn{background:none;border:1.5px solid var(--paper-line);padding:9px 16px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;color:var(--ink-soft);}
+  .saved-note{font-size:12.5px;color:var(--turf);font-family:'JetBrains Mono',monospace;margin-top:8px;}
+
+  /* History */
+  .session-row{
+    background:var(--white);border:1px solid var(--paper-line);border-radius:9px;
+    padding:12px 14px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .session-left .sdate{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
+  .session-left .sname{font-size:14px;font-weight:600;color:var(--turf-dark);margin:2px 0;}
+  .session-left .snote{font-size:12px;color:var(--ink-soft);}
+  .session-right{text-align:right;flex:0 0 auto;}
+  .sresult{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--turf);}
+  .del-btn{background:none;border:none;color:var(--fairway-light);cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+  .del-btn:hover{color:var(--flag);}
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);
+  }
+  .empty-state .flagpole{font-size:32px;margin-bottom:10px;}
+  .loading{text-align:center;padding:60px 20px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:13px;}
+
+  /* Nearby tab */
+  .nearby-card{background:var(--white);border:1px solid var(--paper-line);border-radius:10px;padding:18px;margin-bottom:16px;}
+  .nearby-card h2{font-size:18px;margin:0 0 4px;color:var(--turf-dark);}
+  .nearby-card p{margin:0 0 14px;font-size:13px;color:var(--ink-soft);}
+  .locate-btn{
+    width:100%;background:var(--turf);color:var(--white);border:none;padding:11px;
+    border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;
+  }
+  .locate-btn:hover{background:var(--turf-dark);}
+  .locate-btn:disabled{opacity:0.6;cursor:default;}
+  .or-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--ink-soft);font-size:11px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;}
+  .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--paper-line);}
+  .manual-row{display:flex;gap:8px;}
+  .manual-row input{flex:1;}
+  .manual-row button{
+    background:var(--flag);color:var(--white);border:none;padding:0 16px;border-radius:7px;
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;
+  }
+  .manual-row button:hover{background:var(--flag-dark);}
+  .nearby-status{font-size:12.5px;color:var(--ink-soft);margin-top:10px;font-family:'JetBrains Mono',monospace;}
+  .nearby-status.err{color:var(--flag-dark);}
+  .nearby-loc-label{font-size:12.5px;color:var(--turf);font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
+  .map-embed{width:100%;height:220px;border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+  .map-embed iframe{width:100%;height:100%;border:0;}
+  .place-row{
+    background:var(--white);border:1px solid var(--paper-line);border-radius:9px;
+    padding:12px 14px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .place-left .pname{font-size:14px;font-weight:600;color:var(--turf-dark);margin-bottom:3px;}
+  .place-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:#E4EFE6;color:var(--turf);margin-right:6px;}
+  .place-badge.range{background:#F3E8C8;color:#8A6A1E;}
+  .place-right{text-align:right;flex:0 0 auto;}
+  .pdist{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--turf);}
+  .pdir{font-size:11px;color:var(--fairway);text-decoration:none;font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Range Book</h1>
+      <span class="sub">practice · track · improve</span>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-practice" onclick="goHome()">Practice</button>
+      <button class="tab-btn" id="tab-history" onclick="showHistory()">History</button>
+      <button class="tab-btn" id="tab-nearby" onclick="showNearby()">Nearby</button>
+    </div>
+  </div>
+  <main id="main">
+    <div class="loading">loading your range book…</div>
+  </main>
+</div>
+
+<script>
+const CATEGORIES = [
+  {id:'putting', name:'Putting', tagline:'Distance control, line, and pressure on the green.'},
+  {id:'chipping', name:'Chipping', tagline:'Get up and down from just off the green.'},
+  {id:'driver', name:'Driver', tagline:'Fairways, contact, and shot shape off the tee.'}
+];
+
+const DRILLS = {
+  putting: [
+    {id:'p1', name:'Clock Drill', desc:'Place 8 balls in a circle around the hole at a set distance. Putt each one before moving to the next.',
+      goals:{Beginner:'4 ft — make 6 of 8', Intermediate:'5 ft — make 6 of 8', Advanced:'6 ft — make 7 of 8'}},
+    {id:'p2', name:'3-6-9 Ladder', desc:'Putt 3 balls from 3 ft, then 6 ft, then 9 ft. You must make all 3 at a distance before stepping back.',
+      goals:{Beginner:'Complete the ladder once', Intermediate:'Complete the ladder twice in a row', Advanced:'Complete the ladder 3 times without a miss'}},
+    {id:'p3', name:'Lag Ladder', desc:'Putt 3 balls each from 20, 40, and 60 feet. Goal is to stop each ball inside a 3-foot circle around the hole.',
+      goals:{Beginner:'2 of 3 inside the circle at 20 ft', Intermediate:'2 of 3 inside the circle at every distance', Advanced:'3 of 3 inside the circle at every distance'}},
+    {id:'p4', name:'Gate Drill', desc:'Set two tees just wider than your putter head a few inches in front of the ball. Putt through the gate without touching either tee.',
+      goals:{Beginner:'8 of 10 clean from 3 ft', Intermediate:'8 of 10 clean from 6 ft', Advanced:'9 of 10 clean from 8 ft'}},
+    {id:'p5', name:'Around the World', desc:'Place 8 balls in a circle around the hole at the same distance, covering breaking putts from every angle.',
+      goals:{Beginner:'4 ft — make 5 of 8', Intermediate:'5 ft — make 6 of 8', Advanced:'6 ft — make 6 of 8'}},
+    {id:'p6', name:'Coin Alignment Drill', desc:'Set a coin or tee on your target line about 6 inches in front of the ball. Putt and check that the ball rolls directly over the marker.',
+      goals:{Beginner:'6 ft — start on line 6 of 10', Intermediate:'6 ft — start on line 8 of 10', Advanced:'8 ft — start on line 9 of 10'}},
+    {id:'p7', name:'One-Hand Putting', desc:'Putt 10 balls from 5 feet using only your trail hand on the club, focusing on smooth tempo and light grip pressure.',
+      goals:{Beginner:'Make 3 of 10', Intermediate:'Make 5 of 10', Advanced:'Make 7 of 10'}},
+    {id:'p8', name:'Par 18', desc:'Pick 18 spots on the practice green at varying distances. Putt each one out like a hole and total your putts for a full 18, like playing a round.',
+      goals:{Beginner:'Finish in 40 putts or fewer', Intermediate:'Finish in 36 putts or fewer (even par)', Advanced:'Finish in 32 putts or fewer'}}
+  ],
+  chipping: [
+    {id:'c1', name:'Landing Spot Drill', desc:'Set a towel or headcover as a landing target. Chip to land the ball on it before it releases toward the hole.',
+      goals:{Beginner:'4 of 10 land on target from 10 yds', Intermediate:'6 of 10 from 15 yds', Advanced:'7 of 10 from 20 yds'}},
+    {id:'c2', name:'Up and Down Challenge', desc:'Drop 10 balls around the green at varying lies and distances. Count how many you get down in 2 shots or fewer.',
+      goals:{Beginner:'4 of 10 up and down', Intermediate:'6 of 10 up and down', Advanced:'8 of 10 up and down'}},
+    {id:'c3', name:'One Club, Three Shots', desc:'With a single club, hit a low runner, a mid-trajectory shot, and a high soft-lander to the same target — change only ball position and swing length.',
+      goals:{Beginner:'Land all 3 shot types on the green', Intermediate:'Land all 3 within 10 ft of target', Advanced:'Land all 3 within 6 ft of target'}},
+    {id:'c4', name:'Ladder Chipping', desc:'Chip to three targets at 10, 20, and 30 yards, alternating targets on every shot.',
+      goals:{Beginner:'1 ball in a 6-ft circle at each distance', Intermediate:'2 balls in a 6-ft circle at each distance', Advanced:'2 balls in a 4-ft circle at each distance'}},
+    {id:'c5', name:'Bump and Run Only', desc:'Play 10 chips using only a bump-and-run with a mid iron — land the ball early on the green and let it release.',
+      goals:{Beginner:'5 of 10 within 10 ft', Intermediate:'7 of 10 within 8 ft', Advanced:'8 of 10 within 6 ft'}},
+    {id:'c6', name:'Hinge and Hold', desc:'Chip 10 balls with an exaggerated wrist hinge on the backswing, holding your finish position for 2 seconds after each shot.',
+      goals:{Beginner:'5 of 10 clean strikes', Intermediate:'7 of 10 clean, within 15 ft', Advanced:'8 of 10 clean, within 10 ft'}},
+    {id:'c7', name:'Trail Hand Toss Match', desc:'Underhand toss a ball to your target to see the trajectory it wants, then chip the same distance and try to match the toss\'s landing spot.',
+      goals:{Beginner:'Match within 10 ft, 3 of 5 tries', Intermediate:'Match within 6 ft, 4 of 5 tries', Advanced:'Match within 3 ft, 4 of 5 tries'}},
+    {id:'c8', name:'Circle Chipping', desc:'Place 6 balls around a target at the same distance from different angles and lies. Chip each one toward the hole.',
+      goals:{Beginner:'2 of 6 inside a 6-ft circle', Intermediate:'4 of 6 inside a 6-ft circle', Advanced:'5 of 6 inside a 6-ft circle'}}
+  ],
+  driver: [
+    {id:'d1', name:'Fairway Finder', desc:'Hit 10 drives, tracking how many would find a 30-yard-wide fairway.',
+      goals:{Beginner:'4 of 10 fairways', Intermediate:'6 of 10 fairways', Advanced:'8 of 10 fairways'}},
+    {id:'d2', name:'Tee Height Ladder', desc:'Hit 3 drives each at low, medium, and high tee height, noting launch and spin feel for each.',
+      goals:{Beginner:'Complete all 9 shots, note ball flight', Intermediate:'Find your best tee height, hit 5 in a row', Advanced:'8 of 9 solid contact across all heights'}},
+    {id:'d3', name:'Alignment Stick Path Drill', desc:'Lay a stick on your target line and one just outside the ball on your swing path to check for over-the-top moves.',
+      goals:{Beginner:'10 swings without hitting the outside stick', Intermediate:'10 drives clean, 6 of 10 solid contact', Advanced:'10 drives clean, 8 of 10 solid contact'}},
+    {id:'d4', name:'Draw / Fade Ladder', desc:'Hit 5 intentional draws followed by 5 intentional fades with your driver.',
+      goals:{Beginner:'Curve it the right way 3 of 10 times', Intermediate:'6 of 10', Advanced:'8 of 10, both shapes stay in play'}},
+    {id:'d5', name:'Speed Ladder', desc:'Hit drives at 75%, 90%, and 100% swing effort, 3 balls each — prioritize solid strike over max distance.',
+      goals:{Beginner:'Solid contact on 6 of 9 shots', Intermediate:'Solid contact on 7 of 9, note carry differences', Advanced:'Solid contact on 8 of 9, carry increases with effort'}},
+    {id:'d6', name:'Three-Ball Commitment', desc:'Choose one specific target for 3 consecutive drives. Go through your full pre-shot routine each time and commit fully to the same line and shape.',
+      goals:{Beginner:'3 of 3 swings with no steering', Intermediate:'2 of 3 finish on your visualized line', Advanced:'3 of 3 finish on your visualized line'}},
+    {id:'d7', name:'Tempo Drill', desc:'Hit 10 drives using a consistent tempo count (e.g. "one" on the backswing, "two" at impact) to avoid rushing the transition.',
+      goals:{Beginner:'Solid contact on 5 of 10', Intermediate:'Solid contact on 7 of 10 with steady tempo', Advanced:'Solid contact on 9 of 10, consistent flight'}},
+    {id:'d8', name:'Low Point Control', desc:'Hit 3 drives at normal tee height, 3 at a lower tee, and 3 nearly on the ground, focused on consistent low-point control.',
+      goals:{Beginner:'Contact (no whiffs) on 7 of 9', Intermediate:'Solid contact on 7 of 9 across all heights', Advanced:'Solid contact on 8 of 9, minimal drop-off at low tees'}}
+  ]
+};
+
+let sessions = [];
+let storageOK = true;
+
+async function loadSessions(){
+  try{
+    const res = await window.storage.get('golf-sessions', false);
+    sessions = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    sessions = [];
+  }
+  renderHome();
+}
+
+async function persist(){
+  try{
+    await window.storage.set('golf-sessions', JSON.stringify(sessions), false);
+  }catch(e){
+    storageOK = false;
+  }
+}
+
+function ringIcon(color){
+  return `<svg width="46" height="46" viewBox="0 0 46 46">
+    <circle cx="23" cy="23" r="20" fill="none" stroke="${color}" stroke-width="2" opacity="0.25"/>
+    <circle cx="23" cy="23" r="13" fill="none" stroke="${color}" stroke-width="2" opacity="0.5"/>
+    <circle cx="23" cy="23" r="6" fill="${color}"/>
+  </svg>`;
+}
+
+function setActiveTab(which){
+  document.getElementById('tab-practice').classList.toggle('active', which==='practice');
+  document.getElementById('tab-history').classList.toggle('active', which==='history');
+  document.getElementById('tab-nearby').classList.toggle('active', which==='nearby');
+}
+
+function statsSummary(){
+  const total = sessions.length;
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(now.getDate()-7);
+  const thisWeek = sessions.filter(s => new Date(s.date) >= weekAgo).length;
+  // streak: consecutive days with at least one session, ending today or yesterday
+  const days = new Set(sessions.map(s => s.date.slice(0,10)));
+  let streak = 0;
+  let cursor = new Date(now);
+  for(;;){
+    const key = cursor.toISOString().slice(0,10);
+    if(days.has(key)){
+      streak++;
+      cursor.setDate(cursor.getDate()-1);
+    } else if(streak===0 && key===now.toISOString().slice(0,10)){
+      cursor.setDate(cursor.getDate()-1);
+      continue;
+    } else break;
+  }
+  return {total, thisWeek, streak};
+}
+
+function renderHome(){
+  setActiveTab('practice');
+  const s = statsSummary();
+  const colors = {putting:'#2D5A3D', chipping:'#B23A2E', driver:'#4A7C59'};
+  let html = `
+    <div class="stat-strip">
+      <div class="stat"><span class="num">${s.total}</span><span class="lbl">Sessions</span></div>
+      <div class="stat"><span class="num">${s.thisWeek}</span><span class="lbl">This Week</span></div>
+      <div class="stat"><span class="num">${s.streak}</span><span class="lbl">Day Streak</span></div>
+    </div>
+    <div class="cat-grid">
+  `;
+  CATEGORIES.forEach(cat => {
+    html += `
+      <div class="cat-card" onclick="openCategory('${cat.id}')">
+        <div class="ring-icon">${ringIcon(colors[cat.id])}</div>
+        <div class="cat-info">
+          <h2>${cat.name}</h2>
+          <p>${cat.tagline}</p>
+          <span class="count">${DRILLS[cat.id].length} DRILLS</span>
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+function goHome(){ renderHome(); }
+
+function openCategory(catId){
+  setActiveTab('practice');
+  const cat = CATEGORIES.find(c => c.id===catId);
+  let html = `
+    <button class="back-btn" onclick="goHome()">← back</button>
+    <div class="cat-header">
+      <h2>${cat.name}</h2>
+      <p>${cat.tagline}</p>
+    </div>
+  `;
+  DRILLS[catId].forEach(drill => {
+    html += `
+      <div class="drill-card" id="card-${drill.id}">
+        <div class="drill-head" onclick="toggleDrill('${drill.id}')">
+          <div>
+            <h3>${drill.name}</h3>
+            <p>${drill.desc}</p>
+          </div>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="drill-body">
+          <table class="goal-table">
+            ${Object.entries(drill.goals).map(([tier,goal]) => `
+              <tr>
+                <td style="width:110px;"><span class="tier-tag ${tier}">${tier}</span></td>
+                <td>${goal}</td>
+              </tr>
+            `).join('')}
+          </table>
+          <button class="log-btn" onclick="event.stopPropagation(); openLogForm('${catId}','${drill.id}')">Log This Session</button>
+          <div id="logform-${drill.id}"></div>
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById('main').innerHTML = html;
+}
+
+function toggleDrill(drillId){
+  const card = document.getElementById('card-'+drillId);
+  card.classList.toggle('open');
+}
+
+function openLogForm(catId, drillId){
+  const drill = DRILLS[catId].find(d => d.id===drillId);
+  const container = document.getElementById('logform-'+drillId);
+  if(container.dataset.open === 'true'){
+    container.innerHTML = '';
+    container.dataset.open = 'false';
+    return;
+  }
+  container.dataset.open = 'true';
+  container.innerHTML = `
+    <div class="log-form">
+      <div class="field">
+        <label>Skill Tier</label>
+        <div class="tier-pills" id="pills-${drillId}">
+          ${Object.keys(drill.goals).map((tier,i) => `
+            <div class="tier-pill ${i===0?'sel':''}" data-tier="${tier}" onclick="selectTier('${drillId}', '${tier}')">${tier}</div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="num-row">
+        <div class="field">
+          <label>Attempts</label>
+          <input type="number" id="attempts-${drillId}" min="0" placeholder="e.g. 10">
+        </div>
+        <div class="field">
+          <label>Makes / Successes</label>
+          <input type="number" id="makes-${drillId}" min="0" placeholder="e.g. 7">
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <textarea id="notes-${drillId}" placeholder="What felt good, what to work on..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="save-btn" onclick="saveSession('${catId}','${drillId}')">Save Session</button>
+        <button class="cancel-btn" onclick="openLogForm('${catId}','${drillId}')">Cancel</button>
+      </div>
+      <div id="savednote-${drillId}"></div>
+    </div>
+  `;
+  container.dataset.tier = Object.keys(drill.goals)[0];
+}
+
+function selectTier(drillId, tier){
+  const pills = document.getElementById('pills-'+drillId);
+  pills.querySelectorAll('.tier-pill').forEach(p => {
+    p.classList.toggle('sel', p.dataset.tier === tier);
+  });
+  document.getElementById('logform-'+drillId).dataset.tier = tier;
+}
+
+async function saveSession(catId, drillId){
+  const drill = DRILLS[catId].find(d => d.id===drillId);
+  const container = document.getElementById('logform-'+drillId);
+  const tier = container.dataset.tier || Object.keys(drill.goals)[0];
+  const attempts = document.getElementById('attempts-'+drillId).value;
+  const makes = document.getElementById('makes-'+drillId).value;
+  const notes = document.getElementById('notes-'+drillId).value;
+
+  const session = {
+    id: 'sess_' + Date.now(),
+    category: catId,
+    drillId: drillId,
+    drillName: drill.name,
+    tier: tier,
+    attempts: attempts === '' ? null : Number(attempts),
+    makes: makes === '' ? null : Number(makes),
+    notes: notes.trim(),
+    date: new Date().toISOString()
+  };
+  sessions.unshift(session);
+  await persist();
+
+  const note = document.getElementById('savednote-'+drillId);
+  note.innerHTML = `<div class="saved-note">✓ Saved to your history</div>`;
+  setTimeout(() => { openLogForm(catId, drillId); }, 900);
+}
+
+function showHistory(){
+  setActiveTab('history');
+  const s = statsSummary();
+  let html = `
+    <div class="stat-strip">
+      <div class="stat"><span class="num">${s.total}</span><span class="lbl">Sessions</span></div>
+      <div class="stat"><span class="num">${s.thisWeek}</span><span class="lbl">This Week</span></div>
+      <div class="stat"><span class="num">${s.streak}</span><span class="lbl">Day Streak</span></div>
+    </div>
+  `;
+  if(sessions.length === 0){
+    html += `
+      <div class="empty-state">
+        <div class="flagpole">⛳</div>
+        <div>No sessions logged yet. Head to Practice and log your first drill.</div>
+      </div>
+    `;
+  } else {
+    sessions.forEach(sess => {
+      const catName = CATEGORIES.find(c => c.id===sess.category)?.name || sess.category;
+      const dateStr = new Date(sess.date).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+      const result = (sess.makes!==null && sess.attempts!==null) ? `${sess.makes}/${sess.attempts}` : '—';
+      html += `
+        <div class="session-row">
+          <div class="session-left">
+            <div class="sdate">${dateStr} · ${catName.toUpperCase()} · ${sess.tier}</div>
+            <div class="sname">${sess.drillName}</div>
+            ${sess.notes ? `<div class="snote">${escapeHtml(sess.notes)}</div>` : ''}
+          </div>
+          <div class="session-right">
+            <div class="sresult">${result}</div>
+            <button class="del-btn" onclick="deleteSession('${sess.id}')">delete</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+  document.getElementById('main').innerHTML = html;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function deleteSession(id){
+  sessions = sessions.filter(s => s.id !== id);
+  await persist();
+  showHistory();
+}
+
+/* ---------- Nearby tab ---------- */
+const SEARCH_RADIUS_METERS = 40234; // 25 miles
+let nearby = {
+  state: 'idle',      // idle | locating | loading | results | error
+  coords: null,       // {lat, lon}
+  label: '',
+  results: [],
+  error: ''
+};
+
+function showNearby(){
+  setActiveTab('nearby');
+  renderNearby();
+}
+
+function renderNearby(){
+  let html = `
+    <div class="nearby-card">
+      <h2>Find Courses &amp; Ranges</h2>
+      <p>Search a 25-mile radius for golf courses and driving ranges using OpenStreetMap data.</p>
+      <button class="locate-btn" id="locate-btn" onclick="requestLocation()" ${nearby.state==='locating' || nearby.state==='loading' ? 'disabled' : ''}>
+        ${nearby.state==='locating' ? 'Getting your location…' : '📍 Use My Location'}
+      </button>
+      <div class="or-divider">or enter a city / zip</div>
+      <div class="manual-row">
+        <input type="text" id="manual-loc" placeholder="e.g. Austin, TX or 78701" onkeydown="if(event.key==='Enter') searchManualLocation()">
+        <button onclick="searchManualLocation()">Search</button>
+      </div>
+      ${nearby.state==='error' ? `<div class="nearby-status err">${escapeHtml(nearby.error)}</div>` : ''}
+      ${nearby.state==='loading' ? `<div class="nearby-status">Searching for courses and ranges…</div>` : ''}
+    </div>
+  `;
+
+  if(nearby.state === 'results' && nearby.coords){
+    const {lat, lon} = nearby.coords;
+    html += `<div class="nearby-loc-label">Showing results near: ${escapeHtml(nearby.label)}</div>`;
+    html += `
+      <div class="map-embed">
+        <iframe src="https://maps.google.com/maps?q=golf%20courses&ll=${lat},${lon}&z=11&output=embed" loading="lazy"></iframe>
+      </div>
+      <a class="pdir" style="display:inline-block;margin-bottom:14px;" target="_blank"
+         href="https://www.google.com/maps/search/golf+courses/@${lat},${lon},11z">Open full map in Google Maps →</a>
+    `;
+    if(nearby.results.length === 0){
+      html += `
+        <div class="empty-state">
+          <div class="flagpole">⛳</div>
+          <div>No courses or ranges found within 25 miles. Try a different location.</div>
+        </div>
+      `;
+    } else {
+      nearby.results.forEach(p => {
+        html += `
+          <div class="place-row">
+            <div class="place-left">
+              <div class="pname">
+                <span class="place-badge ${p.type==='Driving Range' ? 'range':''}">${p.type}</span>
+              </div>
+              <div class="pname">${escapeHtml(p.name)}</div>
+              <a class="pdir" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}">Get Directions →</a>
+            </div>
+            <div class="place-right">
+              <div class="pdist">${p.distance.toFixed(1)}</div>
+              <div style="font-size:10px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">MI</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function requestLocation(){
+  if(!navigator.geolocation){
+    nearby.state = 'error';
+    nearby.error = 'Your browser doesn\'t support geolocation. Try entering a city or zip instead.';
+    renderNearby();
+    return;
+  }
+  nearby.state = 'locating';
+  nearby.error = '';
+  renderNearby();
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      fetchNearbyPlaces(lat, lon, 'Your Location');
+    },
+    err => {
+      nearby.state = 'error';
+      nearby.error = 'Couldn\'t get your location (permission denied or unavailable). Try entering a city or zip below.';
+      renderNearby();
+    },
+    {enableHighAccuracy:false, timeout:10000}
+  );
+}
+
+async function searchManualLocation(){
+  const input = document.getElementById('manual-loc');
+  const query = input.value.trim();
+  if(!query){
+    nearby.state = 'error';
+    nearby.error = 'Enter a city or zip code first.';
+    renderNearby();
+    return;
+  }
+  nearby.state = 'loading';
+  nearby.error = '';
+  renderNearby();
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+    if(!res.ok) throw new Error('geocode failed');
+    const data = await res.json();
+    if(!data || data.length === 0){
+      nearby.state = 'error';
+      nearby.error = `Couldn't find "${query}". Try a different city or zip.`;
+      renderNearby();
+      return;
+    }
+    const lat = parseFloat(data[0].lat);
+    const lon = parseFloat(data[0].lon);
+    const label = data[0].display_name.split(',').slice(0,3).join(',');
+    fetchNearbyPlaces(lat, lon, label);
+  }catch(e){
+    nearby.state = 'error';
+    nearby.error = 'Location search failed. Check your connection and try again.';
+    renderNearby();
+  }
+}
+
+function haversineMiles(lat1, lon1, lat2, lon2){
+  const R = 3958.8; // earth radius in miles
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+async function fetchNearbyPlaces(lat, lon, label){
+  nearby.state = 'loading';
+  nearby.coords = {lat, lon};
+  nearby.label = label;
+  renderNearby();
+
+  const query = `
+    [out:json][timeout:25];
+    (
+      node["leisure"="golf_course"](around:${SEARCH_RADIUS_METERS},${lat},${lon});
+      way["leisure"="golf_course"](around:${SEARCH_RADIUS_METERS},${lat},${lon});
+      node["golf"="driving_range"](around:${SEARCH_RADIUS_METERS},${lat},${lon});
+      way["golf"="driving_range"](around:${SEARCH_RADIUS_METERS},${lat},${lon});
+    );
+    out center tags;
+  `;
+
+  try{
+    const res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
+    if(!res.ok) throw new Error('overpass failed');
+    const data = await res.json();
+    const seen = new Set();
+    const places = [];
+    (data.elements || []).forEach(el => {
+      const plat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
+      const plon = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
+      if(plat === null || plon === null) return;
+      const name = (el.tags && el.tags.name) ? el.tags.name : (el.tags && el.tags.golf === 'driving_range' ? 'Unnamed Driving Range' : 'Unnamed Golf Course');
+      const type = (el.tags && el.tags.golf === 'driving_range') ? 'Driving Range' : 'Golf Course';
+      const key = name + '|' + plat.toFixed(3) + '|' + plon.toFixed(3);
+      if(seen.has(key)) return;
+      seen.add(key);
+      places.push({
+        name, type, lat: plat, lon: plon,
+        distance: haversineMiles(lat, lon, plat, plon)
+      });
+    });
+    places.sort((a,b) => a.distance - b.distance);
+    nearby.results = places.slice(0, 20);
+    nearby.state = 'results';
+    renderNearby();
+  }catch(e){
+    nearby.state = 'error';
+    nearby.error = 'Could not reach the map data service. Check your connection and try again.';
+    renderNearby();
+  }
+}
+
+loadSessions();
+</script>
+</body>
+</html>
