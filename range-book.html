@@ -128,6 +128,22 @@
   .balance-count{width:28px;flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);}
   .balance-empty{margin:0;font-size:13px;color:var(--ink-soft);}
 
+  .share-btn{
+    display:block;
+    width:100%;
+    background:none;
+    border:1.5px solid var(--turf);
+    color:var(--turf);
+    padding:10px 16px;
+    border-radius:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    margin-bottom:20px;
+  }
+  .share-btn:hover{background:var(--turf);color:var(--white);}
+
   /* Category view */
   .back-btn{
     background:none;border:none;color:var(--turf);
@@ -452,6 +468,41 @@ function renderBalanceCard(){
   `;
 }
 
+function statsShareText(){
+  const s = statsSummary();
+  const counts = weeklyBalance();
+  const goalHits = sessions.filter(sess => sess.goalHit).length;
+  return [
+    '⛳ Range Book Stats',
+    `${s.total} session${s.total===1?'':'s'} logged · ${s.streak} day streak`,
+    `This week: ${counts.putting}x putting, ${counts.chipping}x chipping, ${counts.driver}x driver`,
+    `${goalHits} goal${goalHits===1?'':'s'} hit`
+  ].join('\n');
+}
+
+async function shareStats(){
+  const text = statsShareText();
+  if(navigator.share){
+    try{
+      await navigator.share({text, title:'Range Book Stats'});
+      return;
+    }catch(e){
+      if(e.name === 'AbortError') return;
+    }
+  }
+  const btn = document.getElementById('share-stats-btn');
+  try{
+    await navigator.clipboard.writeText(text);
+    if(btn){
+      const original = btn.textContent;
+      btn.textContent = 'Copied to clipboard!';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }
+  }catch(e){
+    prompt('Copy your stats:', text);
+  }
+}
+
 function renderHome(){
   setActiveTab('practice');
   const s = statsSummary();
@@ -635,6 +686,7 @@ function showHistory(){
       <div class="stat"><span class="num">${s.streak}</span><span class="lbl">Day Streak</span></div>
     </div>
     ${renderBalanceCard()}
+    ${s.total > 0 ? `<button class="share-btn" id="share-stats-btn" onclick="shareStats()">📤 Share Your Stats</button>` : ''}
   `;
   if(sessions.length === 0){
     html += `
