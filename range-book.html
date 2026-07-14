@@ -111,6 +111,23 @@
   .stat .num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--turf);display:block;}
   .stat .lbl{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;}
 
+  /* Weekly balance */
+  .balance-card{
+    border:1px solid var(--paper-line);
+    border-radius:10px;
+    background:var(--white);
+    padding:14px 16px 16px;
+    margin-bottom:20px;
+  }
+  .balance-card h3{margin:0 0 12px;font-size:13px;color:var(--turf-dark);}
+  .balance-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .balance-row:last-child{margin-bottom:0;}
+  .balance-label{width:64px;flex:0 0 auto;font-size:12px;color:var(--ink-soft);}
+  .balance-bar-track{flex:1;height:8px;background:var(--paper-line);border-radius:4px;overflow:hidden;}
+  .balance-bar-fill{height:100%;border-radius:4px;}
+  .balance-count{width:28px;flex:0 0 auto;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);}
+  .balance-empty{margin:0;font-size:13px;color:var(--ink-soft);}
+
   /* Category view */
   .back-btn{
     background:none;border:none;color:var(--turf);
@@ -194,6 +211,7 @@
   .save-btn:hover{background:var(--flag-dark);}
   .cancel-btn{background:none;border:1.5px solid var(--paper-line);padding:9px 16px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;color:var(--ink-soft);}
   .saved-note{font-size:12.5px;color:var(--turf);font-family:'JetBrains Mono',monospace;margin-top:8px;}
+  .saved-note.hit{color:var(--flag);font-weight:700;}
 
   /* History */
   .session-row{
@@ -205,6 +223,10 @@
   .session-left .snote{font-size:12px;color:var(--ink-soft);}
   .session-right{text-align:right;flex:0 0 auto;}
   .sresult{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--turf);}
+  .goal-badge{
+    display:inline-block;margin-top:3px;font-size:10px;font-weight:700;letter-spacing:0.03em;
+    color:var(--flag);font-family:'JetBrains Mono',monospace;text-transform:uppercase;
+  }
   .del-btn{background:none;border:none;color:var(--fairway-light);cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:4px;}
   .del-btn:hover{color:var(--flag);}
   .empty-state{
@@ -388,6 +410,48 @@ function statsSummary(){
   return {total, thisWeek, streak};
 }
 
+function weeklyBalance(){
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(now.getDate()-7);
+  const counts = {putting:0, chipping:0, driver:0};
+  sessions.forEach(s => {
+    if(new Date(s.date) >= weekAgo && counts.hasOwnProperty(s.category)){
+      counts[s.category]++;
+    }
+  });
+  return counts;
+}
+
+function renderBalanceCard(){
+  const counts = weeklyBalance();
+  const colors = {putting:'#2D5A3D', chipping:'#B23A2E', driver:'#4A7C59'};
+  const total = counts.putting + counts.chipping + counts.driver;
+  if(total === 0){
+    return `
+      <div class="balance-card">
+        <h3>This Week's Balance</h3>
+        <p class="balance-empty">No sessions logged this week yet — get out there!</p>
+      </div>
+    `;
+  }
+  const max = Math.max(counts.putting, counts.chipping, counts.driver, 1);
+  const rows = CATEGORIES.map(cat => `
+    <div class="balance-row">
+      <span class="balance-label">${cat.name}</span>
+      <div class="balance-bar-track">
+        <div class="balance-bar-fill" style="width:${Math.round((counts[cat.id]/max)*100)}%;background:${colors[cat.id]};"></div>
+      </div>
+      <span class="balance-count">${counts[cat.id]}x</span>
+    </div>
+  `).join('');
+  return `
+    <div class="balance-card">
+      <h3>This Week's Balance</h3>
+      ${rows}
+    </div>
+  `;
+}
+
 function renderHome(){
   setActiveTab('practice');
   const s = statsSummary();
@@ -398,6 +462,7 @@ function renderHome(){
       <div class="stat"><span class="num">${s.thisWeek}</span><span class="lbl">This Week</span></div>
       <div class="stat"><span class="num">${s.streak}</span><span class="lbl">Day Streak</span></div>
     </div>
+    ${renderBalanceCard()}
     <div class="cat-grid">
   `;
   CATEGORIES.forEach(cat => {
@@ -512,13 +577,31 @@ function selectTier(drillId, tier){
   document.getElementById('logform-'+drillId).dataset.tier = tier;
 }
 
+// Goals are free-text (e.g. "6 ft — make 6 of 8"); pull the "X of Y" pattern
+// out when present so a session can be checked against it. Goals without that
+// pattern (ladders, par scores, descriptive goals) are left unscored.
+function parseGoalTarget(text){
+  const m = text.match(/(\d+)\s*of\s*(\d+)/i);
+  if(!m) return null;
+  return {makes: Number(m[1]), attempts: Number(m[2])};
+}
+
+function didHitGoal(drill, tier, attempts, makes){
+  if(attempts===null || makes===null) return null;
+  const goal = parseGoalTarget(drill.goals[tier]);
+  if(!goal) return null;
+  return attempts >= goal.attempts && makes >= goal.makes;
+}
+
 async function saveSession(catId, drillId){
   const drill = DRILLS[catId].find(d => d.id===drillId);
   const container = document.getElementById('logform-'+drillId);
   const tier = container.dataset.tier || Object.keys(drill.goals)[0];
-  const attempts = document.getElementById('attempts-'+drillId).value;
-  const makes = document.getElementById('makes-'+drillId).value;
+  const attemptsVal = document.getElementById('attempts-'+drillId).value;
+  const makesVal = document.getElementById('makes-'+drillId).value;
   const notes = document.getElementById('notes-'+drillId).value;
+  const attempts = attemptsVal === '' ? null : Number(attemptsVal);
+  const makes = makesVal === '' ? null : Number(makesVal);
 
   const session = {
     id: 'sess_' + Date.now(),
@@ -526,16 +609,19 @@ async function saveSession(catId, drillId){
     drillId: drillId,
     drillName: drill.name,
     tier: tier,
-    attempts: attempts === '' ? null : Number(attempts),
-    makes: makes === '' ? null : Number(makes),
+    attempts: attempts,
+    makes: makes,
     notes: notes.trim(),
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    goalHit: didHitGoal(drill, tier, attempts, makes)
   };
   sessions.unshift(session);
   await persist();
 
   const note = document.getElementById('savednote-'+drillId);
-  note.innerHTML = `<div class="saved-note">✓ Saved to your history</div>`;
+  note.innerHTML = session.goalHit
+    ? `<div class="saved-note hit">✓ Saved — Goal Hit! 🎯</div>`
+    : `<div class="saved-note">✓ Saved to your history</div>`;
   setTimeout(() => { openLogForm(catId, drillId); }, 900);
 }
 
@@ -548,6 +634,7 @@ function showHistory(){
       <div class="stat"><span class="num">${s.thisWeek}</span><span class="lbl">This Week</span></div>
       <div class="stat"><span class="num">${s.streak}</span><span class="lbl">Day Streak</span></div>
     </div>
+    ${renderBalanceCard()}
   `;
   if(sessions.length === 0){
     html += `
@@ -570,6 +657,7 @@ function showHistory(){
           </div>
           <div class="session-right">
             <div class="sresult">${result}</div>
+            ${sess.goalHit ? `<div class="goal-badge">✓ Goal</div>` : ''}
             <button class="del-btn" onclick="deleteSession('${sess.id}')">delete</button>
           </div>
         </div>
