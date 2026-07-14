@@ -336,8 +336,8 @@ let storageOK = true;
 
 async function loadSessions(){
   try{
-    const res = await window.storage.get('golf-sessions', false);
-    sessions = res && res.value ? JSON.parse(res.value) : [];
+    const raw = window.localStorage.getItem('golf-sessions');
+    sessions = raw ? JSON.parse(raw) : [];
   }catch(e){
     sessions = [];
   }
@@ -346,7 +346,7 @@ async function loadSessions(){
 
 async function persist(){
   try{
-    await window.storage.set('golf-sessions', JSON.stringify(sessions), false);
+    window.localStorage.setItem('golf-sessions', JSON.stringify(sessions));
   }catch(e){
     storageOK = false;
   }
