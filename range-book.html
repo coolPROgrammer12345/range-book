@@ -243,6 +243,23 @@
     display:inline-block;margin-top:3px;font-size:10px;font-weight:700;letter-spacing:0.03em;
     color:var(--flag);font-family:'JetBrains Mono',monospace;text-transform:uppercase;
   }
+
+  /* Credits */
+  .credit-row{
+    background:var(--white);border:1px solid var(--paper-line);border-radius:9px;
+    padding:12px 16px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .credit-name{font-size:14px;font-weight:600;color:var(--turf-dark);}
+  .credit-role{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--fairway);
+    text-transform:uppercase;letter-spacing:0.04em;
+  }
+
+  /* Alpha footer */
+  .alpha-note{
+    text-align:center;font-size:11.5px;color:var(--ink-soft);
+    margin-top:24px;padding-top:16px;border-top:1px dashed var(--paper-line);
+  }
   .del-btn{background:none;border:none;color:var(--fairway-light);cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:4px;}
   .del-btn:hover{color:var(--flag);}
   .empty-state{
@@ -298,6 +315,7 @@
       <button class="tab-btn active" id="tab-practice" onclick="goHome()">Practice</button>
       <button class="tab-btn" id="tab-history" onclick="showHistory()">History</button>
       <button class="tab-btn" id="tab-nearby" onclick="showNearby()">Nearby</button>
+      <button class="tab-btn" id="tab-credits" onclick="showCredits()">Credits</button>
     </div>
   </div>
   <main id="main">
@@ -306,6 +324,11 @@
 </div>
 
 <script>
+const CREDITS = [
+  {name:'MkUltra', role:'Dev'},
+  {name:'Lobster', role:'Tester'}
+];
+
 const CATEGORIES = [
   {id:'putting', name:'Putting', tagline:'Distance control, line, and pressure on the green.'},
   {id:'chipping', name:'Chipping', tagline:'Get up and down from just off the green.'},
@@ -408,6 +431,7 @@ function setActiveTab(which){
   document.getElementById('tab-practice').classList.toggle('active', which==='practice');
   document.getElementById('tab-history').classList.toggle('active', which==='history');
   document.getElementById('tab-nearby').classList.toggle('active', which==='nearby');
+  document.getElementById('tab-credits').classList.toggle('active', which==='credits');
 }
 
 function statsSummary(){
@@ -535,6 +559,7 @@ function renderHome(){
     `;
   });
   html += `</div>`;
+  html += `<p class="alpha-note">App in Alpha, dont expect anything crazy. Thank you to all testers and builders</p>`;
   document.getElementById('main').innerHTML = html;
 }
 
@@ -750,6 +775,23 @@ let nearby = {
 function showNearby(){
   setActiveTab('nearby');
   renderNearby();
+}
+
+function showCredits(){
+  setActiveTab('credits');
+  const rows = CREDITS.map(person => `
+    <div class="credit-row">
+      <span class="credit-name">${escapeHtml(person.name)}</span>
+      <span class="credit-role">${escapeHtml(person.role)}</span>
+    </div>
+  `).join('');
+  document.getElementById('main').innerHTML = `
+    <div class="nearby-card">
+      <h2>Testers &amp; Builders</h2>
+      <p>Range Book is built and tested by a small crew. Thank you for helping shape it.</p>
+    </div>
+    ${rows}
+  `;
 }
 
 function renderNearby(){
