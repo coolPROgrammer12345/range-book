@@ -6,6 +6,7 @@
 <title>Range Book — Golf Practice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --turf-dark:#182620;
@@ -262,6 +263,32 @@
   }
   .del-btn{background:none;border:none;color:var(--fairway-light);cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:4px;}
   .del-btn:hover{color:var(--flag);}
+  .saved-note.err{color:var(--flag-dark);}
+
+  /* Auth */
+  #app.logged-out .tab-row{display:none;}
+  .auth-wrap{max-width:340px;margin:60px auto;padding:0 20px;}
+  .auth-card{background:var(--white);border:1px solid var(--paper-line);border-radius:10px;padding:24px;}
+  .auth-card h2{font-size:20px;margin:0 0 4px;color:var(--turf-dark);text-align:center;}
+  .auth-card .auth-sub{text-align:center;font-size:12.5px;color:var(--ink-soft);margin:0 0 20px;}
+  .auth-card .field{margin-bottom:12px;}
+  .auth-card input[type=email],.auth-card input[type=password]{
+    width:100%;border:1.5px solid var(--paper-line);border-radius:7px;
+    padding:9px 10px;font-family:'Source Sans 3',sans-serif;font-size:14px;
+    background:var(--white);color:var(--ink);
+  }
+  .auth-btn{
+    width:100%;background:var(--flag);color:var(--white);border:none;padding:11px;
+    border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;margin-top:6px;
+  }
+  .auth-btn:hover{background:var(--flag-dark);}
+  .auth-btn:disabled{opacity:0.6;cursor:default;}
+  .auth-toggle{text-align:center;margin-top:14px;font-size:12.5px;color:var(--ink-soft);}
+  .auth-toggle a{color:var(--turf);cursor:pointer;text-decoration:underline;}
+  .auth-status{font-size:12.5px;margin-top:10px;font-family:'JetBrains Mono',monospace;text-align:center;}
+  .auth-status.err{color:var(--flag-dark);}
+  .auth-status.ok{color:var(--turf);}
+  .acct-row{display:flex;justify-content:space-between;align-items:center;}
   .empty-state{
     text-align:center;padding:40px 20px;color:var(--ink-soft);
   }
@@ -327,6 +354,13 @@
 </div>
 
 <script>
+const SUPABASE_URL = 'https://biuqydjfnomgchxjwipp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpdXF5ZGpmbm9tZ2NoeGp3aXBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDEyNjMsImV4cCI6MjA5OTcxNzI2M30.Y8Yb-qzHnMhFkOv0uq7yzWYqTUAddUqc81I3VmocvgI';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let authMode = 'login';
+
 const CREDITS = [
   {name:'MkUltra', role:'Dev'},
   {name:'Lobster', role:'Tester'}
@@ -404,22 +438,94 @@ const DRILLS = {
 let sessions = [];
 let storageOK = true;
 
+function rowToSession(row){
+  return {
+    id: row.id,
+    category: row.category,
+    drillId: row.drill_id,
+    drillName: row.drill_name,
+    tier: row.tier,
+    attempts: row.attempts,
+    makes: row.makes,
+    notes: row.notes,
+    date: row.created_at,
+    goalHit: row.goal_hit
+  };
+}
+
 async function loadSessions(){
+  document.getElementById('main').innerHTML = '<div class="loading">loading your range book…</div>';
   try{
-    const raw = window.localStorage.getItem('golf-sessions');
-    sessions = raw ? JSON.parse(raw) : [];
+    const { data, error } = await sb
+      .from('sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    sessions = data.map(rowToSession);
   }catch(e){
     sessions = [];
+    storageOK = false;
   }
   renderHome();
 }
 
-async function persist(){
-  try{
-    window.localStorage.setItem('golf-sessions', JSON.stringify(sessions));
-  }catch(e){
-    storageOK = false;
+function renderAuthScreen(){
+  document.getElementById('app').classList.add('logged-out');
+  const isSignup = authMode === 'signup';
+  document.getElementById('main').innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h2>${isSignup ? 'Create Account' : 'Welcome Back'}</h2>
+        <p class="auth-sub">${isSignup ? 'Sign up to start tracking your practice.' : 'Log in to your Range Book.'}</p>
+        <div class="field"><input type="email" id="auth-email" placeholder="Email" autocomplete="email"></div>
+        <div class="field"><input type="password" id="auth-password" placeholder="Password" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>
+        <button class="auth-btn" id="auth-submit-btn" onclick="submitAuth()">${isSignup ? 'Sign Up' : 'Log In'}</button>
+        <div id="auth-status"></div>
+        <div class="auth-toggle">
+          ${isSignup ? 'Already have an account? <a onclick="toggleAuthMode()">Log in</a>' : 'Don\'t have an account? <a onclick="toggleAuthMode()">Sign up</a>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleAuthMode(){
+  authMode = authMode === 'signup' ? 'login' : 'signup';
+  renderAuthScreen();
+}
+
+async function submitAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const statusEl = document.getElementById('auth-status');
+  const btn = document.getElementById('auth-submit-btn');
+  if(!email || !password){
+    statusEl.innerHTML = `<div class="auth-status err">Enter an email and password.</div>`;
+    return;
   }
+  btn.disabled = true;
+  statusEl.innerHTML = `<div class="auth-status">Working…</div>`;
+  try{
+    if(authMode === 'signup'){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(!data.session){
+        statusEl.innerHTML = `<div class="auth-status ok">Check your email to confirm your account, then log in.</div>`;
+        btn.disabled = false;
+        return;
+      }
+    }else{
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    }
+  }catch(e){
+    statusEl.innerHTML = `<div class="auth-status err">${escapeHtml(e.message || 'Something went wrong.')}</div>`;
+    btn.disabled = false;
+  }
+}
+
+async function logOut(){
+  await sb.auth.signOut();
 }
 
 function ringIcon(color){
@@ -687,24 +793,32 @@ async function saveSession(catId, drillId){
   const notes = document.getElementById('notes-'+drillId).value;
   const attempts = attemptsVal === '' ? null : Number(attemptsVal);
   const makes = makesVal === '' ? null : Number(makesVal);
+  const goalHit = didHitGoal(drill, tier, attempts, makes);
 
-  const session = {
-    id: 'sess_' + Date.now(),
-    category: catId,
-    drillId: drillId,
-    drillName: drill.name,
-    tier: tier,
-    attempts: attempts,
-    makes: makes,
-    notes: notes.trim(),
-    date: new Date().toISOString(),
-    goalHit: didHitGoal(drill, tier, attempts, makes)
-  };
-  sessions.unshift(session);
-  await persist();
+  const { data, error } = await sb
+    .from('sessions')
+    .insert({
+      user_id: currentUser.id,
+      category: catId,
+      drill_id: drillId,
+      drill_name: drill.name,
+      tier: tier,
+      attempts: attempts,
+      makes: makes,
+      notes: notes.trim(),
+      goal_hit: goalHit
+    })
+    .select()
+    .single();
 
   const note = document.getElementById('savednote-'+drillId);
-  note.innerHTML = session.goalHit
+  if(error){
+    note.innerHTML = `<div class="saved-note err">Couldn't save — check your connection and try again.</div>`;
+    return;
+  }
+  sessions.unshift(rowToSession(data));
+
+  note.innerHTML = goalHit
     ? `<div class="saved-note hit">✓ Saved — Goal Hit! 🎯</div>`
     : `<div class="saved-note">✓ Saved to your history</div>`;
   setTimeout(() => { openLogForm(catId, drillId); }, 900);
@@ -760,8 +874,9 @@ function escapeHtml(str){
 }
 
 async function deleteSession(id){
+  const { error } = await sb.from('sessions').delete().eq('id', id);
+  if(error) return;
   sessions = sessions.filter(s => s.id !== id);
-  await persist();
   showHistory();
 }
 
@@ -789,6 +904,13 @@ function showCredits(){
     </div>
   `).join('');
   document.getElementById('main').innerHTML = `
+    <div class="nearby-card">
+      <h2>Account</h2>
+      <div class="acct-row">
+        <span>${escapeHtml(currentUser ? currentUser.email : '')}</span>
+        <button class="cancel-btn" onclick="logOut()">Log Out</button>
+      </div>
+    </div>
     <div class="nearby-card">
       <h2>Testers &amp; Builders</h2>
       <p>Range Book is built and tested by a small crew. Thank you for helping shape it.</p>
@@ -979,7 +1101,17 @@ async function fetchNearbyPlaces(lat, lon, label){
   }
 }
 
-loadSessions();
+sb.auth.onAuthStateChange((event, session) => {
+  currentUser = session ? session.user : null;
+  document.getElementById('app').classList.toggle('logged-out', !currentUser);
+  if(currentUser){
+    loadSessions();
+  }else{
+    sessions = [];
+    authMode = 'login';
+    renderAuthScreen();
+  }
+});
 </script>
 </body>
 </html>
