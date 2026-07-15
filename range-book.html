@@ -245,6 +245,11 @@
     color:var(--flag);font-family:'JetBrains Mono',monospace;text-transform:uppercase;
   }
 
+  /* Points */
+  .points-card{text-align:center;}
+  .points-total{font-family:'Oswald',sans-serif;font-size:44px;font-weight:700;color:var(--flag);letter-spacing:0.01em;}
+  .points-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+
   /* Credits */
   .credit-row{
     background:var(--white);border:1px solid var(--paper-line);border-radius:9px;
@@ -345,6 +350,7 @@
       <button class="tab-btn active" id="tab-practice" onclick="goHome()">Practice</button>
       <button class="tab-btn" id="tab-history" onclick="showHistory()">History</button>
       <button class="tab-btn" id="tab-nearby" onclick="showNearby()">Nearby</button>
+      <button class="tab-btn" id="tab-points" onclick="showPoints()">Points</button>
       <button class="tab-btn" id="tab-credits" onclick="showCredits()">Credits</button>
     </div>
   </div>
@@ -360,6 +366,10 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 let authMode = 'login';
+
+const POINTS_PER_10_MAKES = 100;
+const POINTS_MAX_MAKES_PER_SESSION = 50;
+const POINTS_COOLDOWN_MS = 90 * 1000;
 
 const CREDITS = [
   {name:'MkUltra', role:'Dev'},
@@ -540,6 +550,7 @@ function setActiveTab(which){
   document.getElementById('tab-practice').classList.toggle('active', which==='practice');
   document.getElementById('tab-history').classList.toggle('active', which==='history');
   document.getElementById('tab-nearby').classList.toggle('active', which==='nearby');
+  document.getElementById('tab-points').classList.toggle('active', which==='points');
   document.getElementById('tab-credits').classList.toggle('active', which==='credits');
 }
 
@@ -563,6 +574,43 @@ function statsSummary(){
     } else break;
   }
   return {total, thisWeek, streak};
+}
+
+function computePointsBreakdown(){
+  const sorted = [...sessions].sort((a,b) => new Date(a.date) - new Date(b.date));
+  let lastAwardedTime = null;
+  let total = 0;
+  const awardedIds = new Set();
+  sorted.forEach(s => {
+    if(s.attempts == null || s.makes == null) return;
+    if(s.makes > s.attempts) return;
+    const t = new Date(s.date).getTime();
+    if(lastAwardedTime !== null && (t - lastAwardedTime) < POINTS_COOLDOWN_MS) return;
+    const countedMakes = Math.min(s.makes, POINTS_MAX_MAKES_PER_SESSION);
+    const pts = Math.floor(countedMakes / 10) * POINTS_PER_10_MAKES;
+    if(pts > 0){
+      total += pts;
+      lastAwardedTime = t;
+      awardedIds.add(s.id);
+    }
+  });
+  return {total, awardedIds};
+}
+
+function showPoints(){
+  setActiveTab('points');
+  const {total} = computePointsBreakdown();
+  document.getElementById('main').innerHTML = `
+    <div class="nearby-card points-card">
+      <div class="points-total">${total.toLocaleString()}</div>
+      <div class="points-label">Total Points</div>
+    </div>
+    <div class="nearby-card">
+      <h2>How Points Work</h2>
+      <p>Earn <strong>100 points</strong> for every <strong>10 makes</strong> you log in a session, capped at 50 makes per session (500 pts max).</p>
+      <p>Only one point-earning session counts every 90 seconds — about how long real reps take — so points can't be farmed by spamming fake sessions back to back.</p>
+    </div>
+  `;
 }
 
 function weeklyBalance(){
@@ -818,9 +866,15 @@ async function saveSession(catId, drillId){
   }
   sessions.unshift(rowToSession(data));
 
+  const {awardedIds} = computePointsBreakdown();
+  const earnedPoints = awardedIds.has(data.id)
+    ? Math.floor(Math.min(makes || 0, POINTS_MAX_MAKES_PER_SESSION) / 10) * POINTS_PER_10_MAKES
+    : 0;
+  const pointsNote = earnedPoints > 0 ? ` · +${earnedPoints} pts 💰` : '';
+
   note.innerHTML = goalHit
-    ? `<div class="saved-note hit">✓ Saved — Goal Hit! 🎯</div>`
-    : `<div class="saved-note">✓ Saved to your history</div>`;
+    ? `<div class="saved-note hit">✓ Saved — Goal Hit! 🎯${pointsNote}</div>`
+    : `<div class="saved-note">✓ Saved to your history${pointsNote}</div>`;
   setTimeout(() => { openLogForm(catId, drillId); }, 900);
 }
 

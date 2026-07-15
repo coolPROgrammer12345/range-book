@@ -13,7 +13,8 @@ Open `range-book.html` in any modern browser (or visit the live GitHub Pages URL
 5. Check the **History** tab for your stats: total sessions, sessions this week, day streak, and weekly practice balance.
 6. Tap **Share Your Stats** on the History tab to share or copy a quick summary.
 7. Use the **Nearby** tab to find golf courses and driving ranges within 25 miles, either from your current location or a city/zip you type in.
-8. Use the **Credits** tab to log out.
+8. Check the **Points** tab for your point total and how points are earned.
+9. Use the **Credits** tab to log out.
 
 ## Features
 
@@ -25,6 +26,7 @@ Open `range-book.html` in any modern browser (or visit the live GitHub Pages URL
 - **Weekly balance** — see how many sessions you've logged per category this week
 - **Share Your Stats** — export a short text summary via the native share sheet or clipboard
 - **History tab** with total sessions, sessions this week, and day streak
+- **Points** — earn 100 points per 10 makes logged in a session (capped at 50 makes/session). Only one point-earning session counts every 90 seconds, so points can't be farmed by spamming fake sessions
 - **Nearby tab** — finds golf courses and driving ranges within 25 miles using OpenStreetMap/Overpass data, with an embedded map and one-tap directions
 
 ## Data & Privacy
